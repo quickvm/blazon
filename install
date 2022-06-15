@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+#
+# Copyright (c) 2022 QuickVM, LLC <contact@quickvm.com> All Rights Reserved.
+
+set -e
+
+[[ $UID == 0 ]] || { echo "Please run this as root!"; exit 1; }
+
+: ${BIN_DIR:=/usr/local/bin}
+: ${UNIT_DIR:=/etc/systemd/system}
+
+install bin/blazon ${BIN_DIR}
+install -m 0644 units/blazon@.service ${UNIT_DIR}
+
+systemctl daemon-reload
+
+echo ""
+echo "Great job! Blazon is now installed!"
+echo ""
+echo "If you want to uninstall Blazon please manually run these commands as the root user:"
+echo "sudo systemctl disable blazon@yourservices.service (replace yourservice with whatever service you set this up with)"
+echo "sudo rm -f ${BIN_DIR}/blazon"
+echo "sudo rm -f ${UNIT_DIR}/blazon.service"
+echo "sudo systemctl daemon-reload"
+echo ""

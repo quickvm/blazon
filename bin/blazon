@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+#
+# Copyright (c) 2022 QuickVM, LLC <foss@quickvm.com> All Rights Reserved.
+
+set -e
+
+: ${BLAZON_NOTIFY_DESKTOP:=false}
+: ${BLAZON_NOTIFY_SLACK:=false}
+: ${BLAZON_NOTIFY_PAGERDUTY:=false}
+
+UNIT_NAME="${1}.service"
+JOURNAL_ENTRIES=$(journalctl -r -n 3 -u ${UNIT_NAME} --no-pager)
+
+function notify-desktop() {
+  for SESSION_ID in $(loginctl --no-legend list-sessions | awk '{print $1}')
+  do
+    local NOTIFY_USERNAME=$(loginctl --property Name --value show-session ${SESSION_ID})
+    local NOTIFY_UID=$(loginctl --property User --value show-session ${SESSION_ID})
+    local NOTIFY_DISPLAY="$(loginctl --property Seat --value show-session ${SESSION_ID}|sed -e "s/^seat//")"
+    local NOTIFY_DISPLAY=${NOTIFY_DISPLAY:=None}
+
+    if [ "${NOTIFY_DISPLAY}" != "None" ]; then
+      echo "Sending desktop notification to UID ${NOTIFY_UID}(${NOTIFY_USERNAME}) on display ${NOTIFY_DISPLAY} for session ${SESSION_ID} via notify-send..."
+      sudo -u ${NOTIFY_USERNAME} \
+      DISPLAY=":${NOTIFY_DISPLAY}" \
+      DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/${NOTIFY_UID}/bus notify-send \
+      --app-name="${UNIT_NAME}" --urgency=critical --icon=dialog-warning "${UNIT_NAME} has failed!" "${JOURNAL_ENTRIES}"
+    else
+      echo "Cannot send desktop notification to UID ${NOTIFY_UID}(${NOTIFY_USERNAME}) on session ${SESSION_ID}. No active displays!"
+    fi
+  done
+}
+
+function notify-slack() {
+  echo "Todo: Slack Support... :)"
+}
+
+function notify-pagerduty() {
+  echo "Todo: Pagerduty Support... :)"
+}
+
+if [ "${BLAZON_NOTIFY_DESKTOP}" = true ] ; then
+    notify-desktop
+fi
+
+if [ "${BLAZON_NOTIFY_SLACK}" = true ] ; then
+    notify-slack
+fi
+
+if [ "${BLAZON_NOTIFY_PAGERDUTY}" = true ] ; then
+    notify-pagerduty
+fi

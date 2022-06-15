@@ -1,0 +1,11 @@
+[Unit]
+Description=A systemd unit that always fails to test Blazon alerts
+OnFailure=blazon@%N.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/false
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

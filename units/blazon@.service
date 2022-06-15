@@ -1,0 +1,7 @@
+[Unit]
+Description=Send Blazon alert for %i
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/blazon %i
