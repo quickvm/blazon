@@ -7,8 +7,11 @@ set -e
 
 [[ $UID == 0 ]] || { echo "Please run this as root!"; exit 1; }
 
+: ${UNIT_FILES:=./units}
 : ${BIN_DIR:=/usr/local/bin}
 : ${UNIT_DIR:=/etc/systemd/system}
+
+[[ -d ${UNIT_FILES} ]] || { echo "The ${UNIT_FILES} directory cannot be found! Please run this from the repo root directory!"; exit 1; }
 
 install bin/blazon ${BIN_DIR}
 install -m 0644 units/blazon@.service ${UNIT_DIR}
