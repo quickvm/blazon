@@ -3,8 +3,9 @@
 A script and systemd unit template for setting up `OnFailure=` notifications on any systemd service unit. It currently supports the following notification channels:
 
 1. Desktop via `notify-send` and [D-Bus](https://www.freedesktop.org/wiki/Software/dbus/)
+1. Slack via [Incoming Webhook](https://slack.com/help/articles/115005265063-Incoming-webhooks-for-Slack)
 
-Slack and Pagerduty support is being added "soon"™️
+Pagerduty support is being added "soon"™️
 
 ## Install the systemd unit template
 
@@ -25,6 +26,7 @@ Add an override for your service on the `blazon@.service` systemd template. In t
 Environment=BLAZON_NOTIFY_DESKTOP=true
 Environment=BLAZON_NOTIFY_SLACK=true
 Environment=BLAZON_NOTIFY_PAGERDUTY=true
+Environment=BLAZON_SLACK_WEBHOOK_URL=https://hooks.slack.com/services/AAAAAAAAAAA/BBBBBBBBBBB/CCCCCCCCCCCCCCCCCCCCCC
 ```
 
 Next you will add the below to the `vault.service` unit with `systemctl edit vault.service`
@@ -34,11 +36,11 @@ Next you will add the below to the `vault.service` unit with `systemctl edit vau
 OnFailure=blazon@%N.service
 ```
 
-Once that is done, reload systemd `systemctl daemon-reload` and tada, you have notifications on your `vault.service` unit!!🎉
+Once that is done, reload systemd `systemctl daemon-reload` and tada, you now have notifications on your `vault.service` unit!!🎉
 
 ## Add to all systemd units 📣📣
 
-**⚠️ Warning:** This could be noisy if you have a lot of services that fail all the time. Use at your own risk!
+**⚠️ Warning:** This could be noisy if you have a lot of services. Use at your own risk!
 
 Add `OnFailure=blazon@%N.service` to `/etc/systemd/system/service.d/10-blazon.conf`:
 
@@ -68,16 +70,17 @@ install -m 0644 units/blazon-failure-test.service /etc/systemd/system
 
 Configure blazon to notify when it fails with `systemctl edit blazon@blazon-failure-test.service` and add:
 
-```
+```bash
 [Service]
 Environment=BLAZON_NOTIFY_DESKTOP=true
 Environment=BLAZON_NOTIFY_SLACK=true
 Environment=BLAZON_NOTIFY_PAGERDUTY=true
+Environment=BLAZON_SLACK_WEBHOOK_URL=https://hooks.slack.com/services/AAAAAAAAAAA/BBBBBBBBBBB/CCCCCCCCCCCCCCCCCCCCCC
 ```
 
 Reload systemd with `systemctl daemon-reload` and start the `blazon-failure-test.service` with `systemctl start blazon-failure-test.service`. This unit will fail on start and notify with Blazon. When you are done testing your notifications, you can run the following to remove it:
 
-```
+```bash
 systemctl stop blazon-failure-test.service
 rm -f /etc/systemd/system/blazon-failure-test.service
 rm -rf /etc/systemd/system/blazon@blazon-failure-test.service.d/

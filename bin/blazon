@@ -3,14 +3,15 @@
 #
 # Copyright (c) 2022 QuickVM, LLC <foss@quickvm.com> All Rights Reserved.
 
-set -e
+# set -e
 
 : ${BLAZON_NOTIFY_DESKTOP:=false}
-: ${BLAZON_NOTIFY_SLACK:=false}
+: ${BLAZON_NOTIFY_SLACK:=true}
 : ${BLAZON_NOTIFY_PAGERDUTY:=false}
+: ${BLAZON_SLACK_WEBHOOK_URL:=None}
 
 UNIT_NAME="${1}.service"
-JOURNAL_ENTRIES=$(journalctl -r -n 3 -u ${UNIT_NAME} --no-pager)
+JOURNAL_ENTRIES=$(journalctl -r -n 5 -u ${UNIT_NAME} --no-pager)
 
 function notify-desktop() {
   for SESSION_ID in $(loginctl --no-legend list-sessions | awk '{print $1}')
@@ -33,7 +34,20 @@ function notify-desktop() {
 }
 
 function notify-slack() {
-  echo "Todo: Slack Support... :)"
+
+  local SLACK_JOURNAL_ENTRIES=$(echo "${JOURNAL_ENTRIES}" |sed -z 's/\n/\ \n/g')
+
+  if [ "${BLAZON_SLACK_WEBHOOK_URL}" = "None" ]; then
+    echo "BLAZON_SLACK_WEBHOOK_URL is unset! Exiting..."
+    exit 1
+  else
+  SLACK_PAYLOAD=$(jq --compact-output --null-input \
+    --arg unit_name "${UNIT_NAME}" \
+    --arg hostname "${HOSTNAME}" \
+    --arg slack_journal_entries "${SLACK_JOURNAL_ENTRIES}" \
+    '{"text": "The systemd unit \($unit_name) on \($hostname) has failed!", "blocks": [{"type": "header", "text": {"type": "plain_text", "text": "The systemd unit \($unit_name) on \($hostname) has failed!", "emoji": true}},{"type": "section","block_id": "journalctl","text": {"type": "mrkdwn","text": "```\($slack_journal_entries)```"}},{"type": "divider"}]}')
+  curl -s -o /dev/null -X POST -H 'Content-Type: application/json' --data "${SLACK_PAYLOAD}" ${BLAZON_SLACK_WEBHOOK_URL}
+  fi
 }
 
 function notify-pagerduty() {
